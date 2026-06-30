@@ -180,6 +180,7 @@ flowchart TD
 ## 15. Testing Strategy
 - Unit tests for log formatting and context enrichment.
 - Integration tests verifying emitted fields.
+- pytest tests/unit/test_logging.py (run this command to test test cases)
 
 ---
 

@@ -189,6 +189,8 @@ flowchart TD
 - Unit tests for default and override behavior.
 - Negative tests for missing and invalid values.
 - Environment-based integration tests.
+- pytest tests/unit/test_config.py   (run this command to for testing)
+-
 
 ---
 
