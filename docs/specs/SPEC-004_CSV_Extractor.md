@@ -173,6 +173,7 @@ flowchart TD
 ## 15. Testing Strategy
 - Unit tests for parser behavior.
 - Integration tests using sample CSV files.
+- python -m pytest -v tests/unit/extractors/test_csv_extractor.py  (run this command for test cases)
 
 ---
 
