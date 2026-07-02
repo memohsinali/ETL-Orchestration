@@ -1,0 +1,30 @@
+exit
+db.users.find()
+db.users.countDocuments()
+show collections
+use etl_source_db
+exit
+db.users.countDocuments()
+show collections
+db.createCollection("users")
+db
+use etl_source_db
+show dbs
+db
+exit
+db
+use etl_source_db
+show dbs
+exit
+exir
+show dbs
+exit
+exir
+show dbs
+exit
+For mongosh info see: https://www.mongodb.com/docs/mongodb-shell/Using Mongosh:          2.8.3Using MongoDB:          undefinedConnecting to:          mongodb://127.0.0.1:27017/?directConnection=true&serverSelectionTimeoutMS=2000&authSource=admin&appName=mongosh+2.8.3Current Mongosh Log ID: 6a4458e16699ffb9159df8a2(venv) dev@D-22-2874:~/ETL Orchestration/codebase/docker/compose$ docker exec -it mongodb mongosh -u ${MONGO_ROOT_USERNAME} -p ${MONGO_ROOT_PASSWORD} --authenticationDatabase admin    Learn more at https://docs.docker.com/go/debug-cli/    Try Docker Debug for seamless, persistent debugging tools in any container or image → docker debug mongodbWhat's next:
+exit
+show dbs
+exit
+show dbs
+exit
