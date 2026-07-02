@@ -1,0 +1,104 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: etl-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-etl_db}
+      POSTGRES_USER: ${POSTGRES_USER:-etl_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-etl_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-etl_user} -d ${POSTGRES_DB:-etl_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - etl-network
+
+  mongodb:
+    image: mongo:8
+    container_name: etl-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-root}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-example}
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - etl-network
+
+  etl:
+    build:
+      context: ../..
+      dockerfile: docker/images/etl.Dockerfile
+    container_name: etl-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-etl_db}
+      POSTGRES_USER: ${POSTGRES_USER:-etl_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-etl_password}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      MONGO_URI: mongodb://root:example@mongodb:27017/
+      MONGO_DB: ${MONGO_DB:-etl_db}
+      AIRFLOW__CORE__EXECUTOR: ${AIRFLOW__CORE__EXECUTOR:-LocalExecutor}
+      AIRFLOW__CORE__LOAD_EXAMPLES: ${AIRFLOW__CORE__LOAD_EXAMPLES:-False}
+      PYTHONPATH: /app
+    volumes:
+      - ../..:/app
+    working_dir: /app
+    command: ["python", "-m", "pytest", "-q"]
+    networks:
+      - etl-network
+
+  airflow:
+    build:
+      context: ../..
+      dockerfile: docker/images/etl.Dockerfile
+    container_name: etl-airflow
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-etl_db}
+      POSTGRES_USER: ${POSTGRES_USER:-etl_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-etl_password}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      MONGO_URI: mongodb://root:example@mongodb:27017/
+      MONGO_DB: ${MONGO_DB:-etl_db}
+      AIRFLOW__CORE__EXECUTOR: ${AIRFLOW__CORE__EXECUTOR:-SequentialExecutor}
+      AIRFLOW__CORE__LOAD_EXAMPLES: ${AIRFLOW__CORE__LOAD_EXAMPLES:-False}
+      AIRFLOW__CORE__DAGS_FOLDER: /app/airflow/dags
+      AIRFLOW_HOME: /opt/airflow
+      PYTHONPATH: /app
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../..:/app
+    working_dir: /app
+    command: ["bash", "-lc", "airflow db migrate && airflow users create --username admin --firstname Admin --lastname User --role Admin --email admin@example.com --password admin || true && airflow standalone"]
+    networks:
+      - etl-network
+
+volumes:
+  postgres-data:
+  mongo-data:
+
+networks:
+  etl-network:
+    driver: bridge
