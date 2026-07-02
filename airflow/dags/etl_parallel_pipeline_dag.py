@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timedelta
 
 from airflow import DAG
@@ -12,6 +13,8 @@ from etl.loaders.postgres_loader import PostgresLoader
 from etl.transformers import DataTransformer
 from etl.validators.service import ValidationService
 from etl.validators.schemas import SourceType, ValidatedRecord
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -82,17 +85,27 @@ def validate_task(**context) -> list:
 
     # source_type is passed as a plain string to stay XCom-safe
     sources = [
-        (csv_records,   SourceType.CSV.value),
-        (api_records,   SourceType.API.value),
-        (mongo_records, SourceType.MONGO.value),
+        ("csv_users", csv_records, SourceType.CSV.value),
+        ("api_products", api_records, SourceType.API.value),
+        ("mongo_users", mongo_records, SourceType.MONGO.value),
     ]
 
-    for raw_records, source_type_str in sources:
+    for source_name, raw_records, source_type_str in sources:
         if not isinstance(raw_records, list):
             raw_records = [raw_records] if raw_records else []
 
+        if not raw_records:
+            logger.info("No data to be extracted from %s", source_name)
+            continue
+
+        source_validated_count = 0
         for record in raw_records:
             if not isinstance(record, dict):
+                logger.warning(
+                    "Skipping non-dict record from %s: %r",
+                    source_name,
+                    record,
+                )
                 continue
 
             # CSV and Mongo extractors wrap records in the normalized_record
@@ -108,9 +121,22 @@ def validate_task(**context) -> list:
             validated, errors = service.validate_record(wrapped, source_type_str)
             if validated:
                 validated_records.append(validated)
+                source_validated_count += 1
+            else:
+                logger.warning(
+                    "Validation rejected record from %s: %s",
+                    source_name,
+                    errors,
+                )
 
-    if not validated_records:
-        raise RuntimeError("No validated records produced")
+        if source_validated_count == 0:
+            logger.warning("No valid records produced from %s", source_name)
+        else:
+            logger.info(
+                "Validated %d record(s) from %s",
+                source_validated_count,
+                source_name,
+            )
 
     return [r.model_dump() for r in validated_records]
 
@@ -122,6 +148,10 @@ def validate_task(**context) -> list:
 def transform_task(**context) -> list:
     ti = context["ti"]
     validated_records = ti.xcom_pull(task_ids="validate") or []
+
+    if not validated_records:
+        logger.info("No validated records to transform")
+        return []
 
     records = [ValidatedRecord.model_validate(r) for r in validated_records]
     transformer = DataTransformer()
@@ -153,6 +183,10 @@ def transform_task(**context) -> list:
 def load_task(**context) -> None:
     ti = context["ti"]
     transformed_records = ti.xcom_pull(task_ids="transform") or []
+
+    if not transformed_records:
+        logger.info("No transformed records to load")
+        return None
 
     csv_records   = [r for r in transformed_records if r.get("source_type") == "csv"]
     api_records   = [r for r in transformed_records if r.get("source_type") == "api"]

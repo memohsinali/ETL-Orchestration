@@ -251,7 +251,6 @@ class CSVExtractor:
             len(new_records),
             skipped,
         )
-
         return ExtractionResult(
             records=new_records,
             metadata=metadata,

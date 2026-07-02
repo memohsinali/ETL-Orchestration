@@ -187,4 +187,4 @@ with DAG(
     # ------------------------------------------------------------------ #
     task(task_id="load_csv")(_load_csv_records)(csv_transformed)
     task(task_id="load_api")(_load_api_product_records)(api_transformed)
-    task(task_id="load_mongo")(_load_records)(mongo_transformed)
+    task(task_id="load_mongo")(_load_mongo_records)(mongo_transformed)

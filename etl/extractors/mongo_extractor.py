@@ -60,11 +60,23 @@ class MongoExtractor:
 
             for doc in cursor:
                 # Normalize document - ensure _id is string for transport.
+
+                # normalized = {
+                #     "source_collection": self.config.collection,
+                #     "ingestion_timestamp": datetime.now(timezone.utc).isoformat(),
+                #     "raw_record": doc,
+                #     "normalized_record": {**{k: (str(v) if k == "_id" else v) for k, v in doc.items()}},
+                # }
+                safe_doc = {
+                k: (str(v) if k == "_id" else v)
+                for k, v in doc.items()
+                }       
+
                 normalized = {
-                    "source_collection": self.config.collection,
-                    "ingestion_timestamp": datetime.now(timezone.utc).isoformat(),
-                    "raw_record": doc,
-                    "normalized_record": {**{k: (str(v) if k == "_id" else v) for k, v in doc.items()}},
+                "source_collection": self.config.collection,
+                "ingestion_timestamp": datetime.now(timezone.utc).isoformat(),
+                "raw_record": safe_doc,
+                "normalized_record": safe_doc,
                 }
                 records.append(normalized)
 
@@ -127,5 +139,8 @@ class MongoExtractor:
         }
 
         logger.info("Mongo extraction summary total_found=%d new=%d skipped=%d", len(records), len(new_records), skipped)
-
+        logger.info("=" * 60)
+        logger.info("Mongo records extracted: %d", len(new_records))
+        logger.info("First record: %s", new_records[0] if new_records else "None")
+        logger.info("=" * 60)
         return ExtractionResult(records=new_records, metadata=metadata, errors=errors)

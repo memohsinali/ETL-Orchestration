@@ -50,8 +50,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-etl_password}
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
-      MONGO_URI: mongodb://root:example@mongodb:27017/
-      MONGO_DB: ${MONGO_DB:-etl_db}
+      MONGO_URI: ${MONGO_URI}
+      MONGO_DB: ${MONGO_DB}
       AIRFLOW__CORE__EXECUTOR: ${AIRFLOW__CORE__EXECUTOR:-LocalExecutor}
       AIRFLOW__CORE__LOAD_EXAMPLES: ${AIRFLOW__CORE__LOAD_EXAMPLES:-False}
       PYTHONPATH: /app
@@ -79,8 +79,10 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-etl_password}
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
-      MONGO_URI: mongodb://root:example@mongodb:27017/
-      MONGO_DB: ${MONGO_DB:-etl_db}
+      # MONGO_URI: mongodb://root:example@mongodb:27017/
+      # MONGO_DB: ${MONGO_DB:-etl_db}
+      MONGO_URI: ${MONGO_URI}
+      MONGO_DB: ${MONGO_DB}
       AIRFLOW__CORE__EXECUTOR: ${AIRFLOW__CORE__EXECUTOR:-SequentialExecutor}
       AIRFLOW__CORE__LOAD_EXAMPLES: ${AIRFLOW__CORE__LOAD_EXAMPLES:-False}
       AIRFLOW__CORE__DAGS_FOLDER: /app/airflow/dags
